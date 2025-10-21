@@ -4,6 +4,7 @@ $conn = new mysqli("localhost", "root", "", "sinistri_nuovi");
 require_once 'config_tipo.php';
 require_once 'config_reparti.php';
 require_once 'config_stato.php';
+require_once 'estrai_fasi.php';
 // Controllo errori di connessione
 if ($conn->connect_error) {
     die("Connessione fallita: " . $conn->connect_error);
@@ -61,8 +62,7 @@ if (!empty($_GET['dataevento'])) {
 }
 
 $whereSql = $where ? "WHERE " . implode(" AND ", $where) : "";
-
-$sql = "SELECT * FROM sinistri_nuovi $whereSql ORDER BY Anno DESC LIMIT $perPagina OFFSET $offset";
+$sql = "SELECT * FROM sinistri_nuovi $whereSql ORDER BY Anno DESC, numero DESC LIMIT $perPagina OFFSET $offset";
 $result = $conn->query($sql);
 
 
@@ -161,10 +161,7 @@ $result = $conn->query($sql);
             <input type="text" name="controparte" value="<?= $_GET['controparte'] ?? '' ?>" 
                    placeholder="Controparte" class="form-control form-control-sm">
         </th>
-        <!-- <th class="col-LegaleControparte">
-            <input type="text" name="LegaleControparte" value="<?= $_GET['LegaleControparte'] ?? '' ?>" 
-                   placeholder="LegaleControparte" class="form-control form-control-sm">
-        </th> -->
+
         <th class="col-stato">
             <input type="text" name="stato" value="<?= $_GET['stato'] ?? '' ?>" 
                    placeholder="Stato" class="form-control form-control-sm">
@@ -199,25 +196,8 @@ $result = $conn->query($sql);
                 <td class="col-numero"><?= $row['numero'] ?></td>
                <td class="col-reparto">
 <?php 
-switch($row['repart']){
-    case "VO":
-        echo "Verde ornamentale";
-        break;
-   case "SE":
-        echo "Segnaletica";
-        break;
-         case "MS":
-        echo "Manutenzione arredi";
-        break;
-             case "ST":
-        echo "Strade";
-        break;
-               case "SNCA":
-        echo "Sinistro non competenza";
-        break;
-    default:
-        echo "-"; 
-}
+ echo Reparto::getRepartLabel($row['repart']);
+
 ?>
 </td>
 
@@ -260,15 +240,8 @@ switch($row['repart']){
                         <tr class="collapse collapse-row" id="fasi<?= $row['tipo'] . $row['anno'] . $row['numero'] ?>">
                             <td colspan="9">
                                 <?php
-                                $sqlFasi = "SELECT * 
-                                            FROM fasi_nuove 
-                                            JOIN grid_tfas_csv ON cod = Fasi_cod
-                                            WHERE Sinistri_Tipo='".$conn->real_escape_string($row['tipo'])."' 
-                                              AND Sinistri_Anno=".$row['anno']." 
-                                              AND Sinistri_Numero=".$row['numero']."
-                                            ORDER BY Sinistri_Fasi_Id ASC";
-                                $fasi = $conn->query($sqlFasi);
-                                if ($fasi->num_rows > 0): ?>
+                                $fasi = Fasi::getFasi($conn, $row['id'], $row['anno']);
+                                if (!empty($fasi)): ?>
                                     <table class="table table-sm table-hover mb-0">
                                         <thead>
                                             <tr>
@@ -282,10 +255,10 @@ switch($row['repart']){
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php while($f = $fasi->fetch_assoc()): ?>
+                                            <?php foreach($fasi as $f):  ?>
                                             <tr>
                                                 <td><?= $f['Fasi_Cod'] ?></td>
-                                                <td><?= $f['Descrizione'] ?></td>
+                                                <td><?= !empty($f['Descrizione']) ? $f['Descrizione'] : "" ?></td>
                                                 <td><?php 
                                                 $d = new DateTime($row['DataEvento']);
                                                 echo $d->format('d/m/Y'); 
@@ -295,9 +268,9 @@ switch($row['repart']){
                                                 </td>
                                                 <td><?= htmlspecialchars($f['Esito']) ?></td>
                                                 <td><?= $f['Valore'] ?></td>
-                                                <td><?= htmlspecialchars($f['Annotazioni']) ?></td>
+                                                <td><?= !empty($f['Annotazioni']) ? $f['Annotazioni'] : "" ?></td>
                                             </tr>
-                                            <?php endwhile; ?>
+                                            <?php endforeach; ?>
                                         </tbody>
                                     </table>
                                 <?php else: ?>

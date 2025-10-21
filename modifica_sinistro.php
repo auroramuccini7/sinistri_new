@@ -5,16 +5,16 @@ require_once 'config_reparti.php';
 require_once 'config_stato.php';
 require_once 'config_tipo.php';
 require_once 'config_danno.php';
-// Connessione al DB
+require_once 'estrai_fasi.php';
+
 $conn = new mysqli("localhost", "root", "", "sinistri_nuovi");
 if ($conn->connect_error) die("Connessione fallita: " . $conn->connect_error);
 
 $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-
 $anno = isset($_GET['anno']) ? intval($_GET['anno']) : 0;
 if ($id <= 0) die("ID sinistro non valido.");
 
-// Aggiornamento dati sinistro
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
      if (!empty($_POST['delete_fase_id'])) {
@@ -32,8 +32,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         tipo=?, anno=?, numero=?, repart=?, gestione=?, stato=?, dataEvento=?, tipoDanno=?, causa=?, strada=?, numCiv=?, annotazioni=? 
         WHERE id=?");
     $stmt->bind_param("siisssssssssi",
-        $_POST['tipo'], $_POST['anno'], $_POST['numero'], $_POST['reparto'], $_POST['gestione'],
-        $_POST['stato'], $_POST['data_evento'], $_POST['tipo_danno'], $_POST['causa'],
+        $_POST['tipo'], $_POST['anno'], $_POST['numero'], Reparto::getRepartoCode($_POST['reparto']), $_POST['gestione'],
+        Stato::getStatoCode($_POST['stato']), $_POST['dataEvento'], $_POST['tipo_danno'], $_POST['causa'],
         $_POST['strada'], $_POST['num_civ'], $_POST['annotazioni'], $id);
     $stmt->execute();
 
@@ -42,8 +42,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     foreach ($_POST['cod_fase'] as $i => $cod) {
         if (!empty($cod)) {
             $sql = "INSERT INTO fasi_nuove
-                (sinistri_tipo, sinistri_numero, sinistri_anno, fasi_cod, dataInizio, dataFine, esito, valore, annotazioni) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"; // 9 colonne -> 9 placeholder
+                (sinistri_tipo, sinistri_numero, sinistri_anno, fasi_cod, dataInizio, dataFine, esito, valore, annotazioni,sinistri_id) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,?)"; 
 
             $stmt = $conn->prepare($sql);
 
@@ -61,14 +61,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $esito       = $_POST['esito'][$i];
             $valore      = $_POST['valore'][$i];
             $annotazioni = $_POST['annotazioni_fase'][$i];
-
+            $sinistro_id = $id;
           
-            $stmt->bind_param(
-                "sisssssis",
-                $tipo, $numero, $anno, $fasi_cod,
-                $dataInizio, $dataFine, $esito,
-                $valore, $annotazioni
-            );
+       $stmt->bind_param(
+    "sisssssiss",
+    $tipo, $numero, $anno, $fasi_cod,
+    $dataInizio, $dataFine, $esito,
+    $valore, $annotazioni, $sinistro_id
+);
+
 
             $stmt->execute();
             $stmt->close();
@@ -88,15 +89,7 @@ $stmt->bind_param("ii", $id, $anno);
 $stmt->execute();
 $sinistro = $stmt->get_result()->fetch_assoc();
 
-$fasi = $conn->query(
-    "SELECT fasi_nuove.*, grid_tfas_csv.Descrizione AS DescrizioneFase
-     FROM fasi_nuove
-     JOIN grid_tfas_csv ON fasi_nuove.Fasi_Cod = grid_tfas_csv.Cod
-     WHERE fasi_nuove.Sinistri_Anno = " . (int)$sinistro['anno'] . " 
-     AND fasi_nuove.Sinistri_Numero = " . (int)$sinistro['numero']
-);
-
-
+$fasi= Fasi::getFasi($conn,$id,$anno);
 $allFasi = $conn->query("SELECT * FROM grid_tfas_csv");
 
 ?>
@@ -139,12 +132,12 @@ $allFasi = $conn->query("SELECT * FROM grid_tfas_csv");
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    height: 40px; /* 👈 forza la stessa altezza */
+    height: 40px;
     box-sizing: border-box;
 }
 
 .form-group textarea {
-    height: auto; /* lascia la textarea espandibile */
+    height: auto; 
     min-height: 80px;
     resize: vertical;
 }
@@ -156,10 +149,10 @@ $allFasi = $conn->query("SELECT * FROM grid_tfas_csv");
 function salvaFase(btn) {
     const row = btn.closest("tr");
     const data = {
-        sinistri_fasi_id:<?= (int)$sinistro['id'] ?>,
-        numero: <?= (int)$sinistro['numero'] ?>, // numero del sinistro
-        anno: <?= (int)$sinistro['anno'] ?>,     // anno del sinistro
-        tipo: <?=($sinistro['tipo']) ?>, // tipo del sinistro
+        sinistri_id:<?= (int)$sinistro['id'] ?>,
+        numero: <?= (int)$sinistro['numero'] ?>, 
+        anno: <?= (int)$sinistro['anno'] ?>,     
+        tipo: '<?= htmlspecialchars($sinistro['tipo']) ?>',
         cod_fase: row.querySelector('[name="cod_fase[]"]').value,
         data_inizio: row.querySelector('[name="data_inizio[]"]').value,
         data_fine: row.querySelector('[name="data_fine[]"]').value,
@@ -171,7 +164,8 @@ function salvaFase(btn) {
     $.post('salva_fase.php', data, function(res) {
         if (res.success) {
             alert("✅ Fase salvata!");
-            row.remove();
+            row.querySelectorAll('input, select').forEach(i => i.disabled = true);
+             btn.style.display = 'none'; 
             location.reload();
         } else {
             alert("❌ Errore: " + res.error);
@@ -234,11 +228,24 @@ function rimuoviFase(btn) {
         <input type="number" name="numero" value="<?php echo $sinistro['numero']; ?>" required>
     </div>
     <div class="form-group"><label>Reparto:</label>
-        <input type="text" name="reparto" value="<?php echo Reparto::getRepartLabel($sinistro['repart']); ?>">
+       <select name="reparto" id="reparto-select">
+    <option></option>
+    <?php 
+    $reparti = Reparto::getAllReparti(); 
+    $repartoSelezionato = $sinistro['repart']; // valore da selezionare
+    foreach($reparti as $reparto){ 
+        $selected = ($reparto == Reparto::getRepartLabel($repartoSelezionato)) ? 'selected' : '';
+        echo "<option value=\"$reparto\" $selected>$reparto</option>";
+    } 
+    ?>
+</select>
     </div>
     <div class="form-group"><label>Gestione:</label>
-        <input type="text" name="gestione" value="<?php echo Gestione::getGestioneLabel($sinistro['gestione']); ?>">
-    </div>
+    <select name="gestione" id="gestione">
+        <option value="comune" <?php if($sinistro['gestione'] == "comune") echo "selected"; ?>>Comune</option>
+        <option value="anthea" <?php if($sinistro['gestione'] == "anthea") echo "selected"; ?>>Anthea</option>
+    </select>
+</div>
     <div class="form-group"><label>Stato:</label>
         <input type="text" name="stato" value="<?php echo Stato::getStatoLabel($sinistro['stato']); ?>">
     </div>
@@ -253,7 +260,16 @@ function rimuoviFase(btn) {
         <input type="text" name="causa" value="<?php echo $sinistro['causa']; ?>">
     </div>
     <div class="form-group"><label>Strada:</label>
-        <input type="text" name="strada" value="<?php echo getStradaFromId($sinistro['strada']); ?>">
+       <select name="strada" id="strada-select">
+    <?php 
+    $strade = getAllData(); 
+    $stradaSelezionata = $sinistro['strada']; // ID della strada selezionata
+    foreach($strade as $strada){ 
+        $selected = ($strada['id'] == $stradaSelezionata) ? 'selected' : '';
+        echo '<option value="' . $strada['id'] . '" ' . $selected . '>' . $strada['nome'] . '</option>';
+    } 
+    ?>
+</select>
     </div>
     <div class="form-group"><label>Num. civico:</label>
         <input type="text" name="num_civ" value="<?php echo $sinistro['NumCiv']; ?>">
@@ -269,25 +285,28 @@ function rimuoviFase(btn) {
         <th>Cod.</th><th>Descrizione</th><th>Data inizio</th><th>Data fine</th>
         <th>Esito</th><th>Valore</th><th>Annotazioni</th><th>Azioni</th>
     </tr>
-    <?php while($f = $fasi->fetch_assoc()): ?>
+<?php foreach($fasi as $f): ?>
     <tr>
-        <td><?= $f['Fasi_Cod'] ?></td>
-        <td><?= $f['DescrizioneFase'] ?></td>
-        <td><?= $f['DataInizio'] ?></td>
-        <td><?= $f['DataFine'] ?></td>
-        <td><?= $f['Esito'] ?></td>
-        <td><?= $f['Valore'] ?></td>
-        <td><?= $f['Annotazioni'] ?></td>
+        <td><?= htmlspecialchars($f['Fasi_Cod']) ?></td>
+        <td><?= htmlspecialchars($f['DescrizioneFase']) ?></td>
+        <td><?= htmlspecialchars($f['DataInizio']) ?></td>
+        <td><?= htmlspecialchars($f['DataFine']) ?></td>
+        <td><?= htmlspecialchars($f['Esito']) ?></td>
+        <td><?= htmlspecialchars($f['Valore']) ?></td>
+        <td><?= htmlspecialchars($f['Annotazioni']) ?></td>
         <td>
-       <form method="post"style="display:inline">
-    <input type="hidden" name="delete_fase_id" value="<?= htmlspecialchars($f['id']) ?>">
-    <button type="submit">❌</button>
-    
+            <form method="post" style="display:inline">
+                <input type="hidden" name="delete_fase_id" value="<?= htmlspecialchars($f['id']) ?>">
+                <button type="submit">❌</button>
+            </form>
+        </td>
+    </tr>
+<?php endforeach; ?>
 </form>
 
         </td>
     </tr>
-    <?php endwhile; ?>
+    
 </table>
 
 

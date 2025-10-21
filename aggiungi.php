@@ -3,6 +3,7 @@ require 'api_strade.php';
 require 'config_reparti.php';
 require 'config_stato.php';
 require 'config_tipo.php';
+require 'config_comuni.php';
 
 // Connessione database
 $conn = new mysqli("localhost", "root", "", "sinistri_nuovi");
@@ -27,19 +28,22 @@ $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
           strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-   
-    $stato = Stato::getStatoCode($_POST['stato']);
+
+    $stato = !empty($_POST['stato'])? Stato::getStatoCode($_POST['stato']) : "A" ;
     $reparto = Reparto::getRepartoCode($_POST['reparto']);
+    $comune = Comuni::getComuniCode($_POST['comune']);
     $tipo = $_POST['tipo'];
+    $numero = $_POST['numero']; // Assicurati che esista
     $data_aggiunta = date('Y-m-d');
 
     $stmt = $conn->prepare("INSERT INTO sinistri_nuovi
-        (tipo, anno, numero, repart, gestione, stato, dataEvento, tipoDanno, causa, Controparte, LegaleControparte, strada, numCiv, annotazioni, AGG_DATA) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("siissssssssssss", 
-        $tipo, $_POST['anno'], $numero,  $reparto , $_POST['gestione'], 
-        $stato, $_POST['data_evento'], $_POST['tipo_danno'], $_POST['causa'], $_POST['controparte'],$_POST['legaleControparte'],  
-        $_POST['strada'], $_POST['num_civ'], $_POST['annotazioni'],$data_aggiunta );
+        (tipo, anno, numero, repart, gestione, stato, dataEvento, tipoDanno, causa, Controparte, LegaleControparte, prot_num, strada, numCiv, comune, annotazioni, AGG_DATA) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+    $stmt->bind_param("siissssssssssssss", 
+        $tipo, $_POST['anno'], $numero, $reparto, $_POST['gestione'],
+        $stato, $_POST['data_evento'], $_POST['tipo_danno'], $_POST['causa'], $_POST['controparte'], $_POST['legaleControparte'],
+        $_POST['prot_num'], $_POST['strada'], $_POST['num_civ'], $comune, $_POST['annotazioni'], $data_aggiunta);
 
     if ($stmt->execute()) {
         $sinistro_id = $stmt->insert_id;
@@ -244,7 +248,7 @@ let data = {
         </select>
     </div>
     <div class="form-group"><label>Anno:</label><input type="number" name="anno" value="<?= date('Y') ?>" required></div>
-    <div class="form-group"><label>Numero:</label><input type="number" name="numero" required disabled value=<?= $ultimoNumero+1 ?>></div>
+    <div class="form-group"><label>Numero:</label><input type="number" name="numero" required readonly value=<?= $ultimoNumero+1 ?>></div>
     <div class="form-group">
     <label>Reparto:</label>
     <select name="reparto" id="reparto-select">
@@ -259,8 +263,8 @@ let data = {
 </div>
 
     <div class="form-group"><label>Gestione:</label><select name="gestione" id="gestione">
-            <option value="comune">Comune</option>
-            <option value="anthea">Anthea</option>
+            <option value="C">Comune</option>
+            <option value="A">Anthea</option>
         </select></div></div>
     <div class="form-group"><label>Stato:</label> <select name="stato" id="stato">
             <option value="aperto">Aperto</option>
@@ -288,8 +292,11 @@ let data = {
 
 
     <div class="form-group"><label>Num. civico:</label><input type="number" name="num_civ"></div>
+    <div class="form-group"><label>Comune:</label><input type="text" name="comune"></div>
+     <div class="form-group"><label>Tipo gestione:</label><input type="text" name="tipoGestione"></div>
+    <div class="form-group"><label>Prot num.:</label><input type="number" name="prot_num"></div>
     <div class="form-group"><label>Annotazioni:</label><textarea name="annotazioni"></textarea></div>
-       <div style="display:flex; justify-content:flex-end;"> <input type="submit" value="💾 Salva Sinistro">   </div>
+    <div style="display:flex; justify-content:flex-end;"> <input type="submit" value="💾 Salva Sinistro">   </div>
     <h3>Fasi</h3>
     <table id="fasi">
         <tr>
