@@ -17,7 +17,7 @@ if ($id <= 0) die("ID sinistro non valido.");
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-     if (!empty($_POST['delete_fase_id'])) {
+     if (isset($_POST['delete_fase']) && !empty($_POST['delete_fase_id'])) {
         $fase_id = (int)$_POST['delete_fase_id'];
         $stmt = $conn->prepare("DELETE FROM fasi_nuove WHERE id=?");
         $stmt->bind_param("i", $fase_id);
@@ -254,7 +254,11 @@ function rimuoviFase(btn) {
          value="<?php echo substr($sinistro['DataEvento'], 0, 10); ?>">
     </div>
     <div class="form-group"><label>Tipo danno:</label>
-        <input type="text" name="tipo_danno" value="<?php echo Danno::getDannoLabel($sinistro['TipoDanno']); ?>">
+       
+          <select name="tipo_danno" id="tipo_danno">
+        <option value="comune" <?php if($sinistro['tipo_danno'] == "C") echo "selected"; ?>>Cose</option>
+        <option value="anthea" <?php if($sinistro['tipo_danno'] == "P") echo "selected"; ?>>Persone</option>
+    </select>
     </div>
     <div class="form-group"><label>Causa:</label>
         <input type="text" name="causa" value="<?php echo $sinistro['causa']; ?>">

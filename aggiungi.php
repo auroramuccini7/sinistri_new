@@ -271,7 +271,10 @@ let data = {
             <option value="chiuso">Chiuso</option>
         </select></div>
     <div class="form-group"><label>Data evento:</label><input type="date" name="data_evento" required></div>
-    <div class="form-group"><label>Tipo danno:</label><input type="text" name="tipo_danno"></div>
+      <div class="form-group"><label>Tipo danno:</label> <select name="tipo_danno" id="tipo_danno">
+            <option value="C">Cose</option>
+            <option value="P">Persone</option>
+        </select></div>
     <div class="form-group"><label>Causa:</label><input type="text" name="causa"></div>
         <div class="form-group"><label>Controparte:</label><input type="text" name="controparte"></div>
         <div class="form-group"><label>Legale controparte:</label><input type="text" name="legaleControparte"></div>
@@ -294,7 +297,6 @@ let data = {
     <div class="form-group"><label>Num. civico:</label><input type="number" name="num_civ"></div>
     <div class="form-group"><label>Comune:</label><input type="text" name="comune"></div>
      <div class="form-group"><label>Tipo gestione:</label><input type="text" name="tipoGestione"></div>
-    <div class="form-group"><label>Prot num.:</label><input type="number" name="prot_num"></div>
     <div class="form-group"><label>Annotazioni:</label><textarea name="annotazioni"></textarea></div>
     <div style="display:flex; justify-content:flex-end;"> <input type="submit" value="💾 Salva Sinistro">   </div>
     <h3>Fasi</h3>
