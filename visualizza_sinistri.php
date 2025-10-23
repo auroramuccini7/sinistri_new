@@ -4,6 +4,7 @@ $conn = new mysqli("localhost", "root", "", "sinistri_nuovi");
 require_once 'config_tipo.php';
 require_once 'config_reparti.php';
 require_once 'config_stato.php';
+require_once 'config_gestione.php';
 require_once 'estrai_fasi.php';
 // Controllo errori di connessione
 if ($conn->connect_error) {
@@ -28,9 +29,15 @@ if (!empty($_GET['tipo'])) {
     $where[] = "Tipo LIKE '%$tipo%'";
 }
 if (!empty($_GET['causa'])) {
-$controparte = $conn->real_escape_string($_GET['causa']);;
+$causa = $conn->real_escape_string($_GET['causa']);;
     $where[] = "Causa LIKE '%$causa%'";
 }
+if (!empty($_GET['proprietario'])) {
+$proprietario = $conn->real_escape_string($_GET['proprietario']);;
+    $where[] = "proprietario LIKE '%$proprietario%'";
+}
+
+
 if (!empty($_GET['anno'])) {
     $anno = (int)$_GET['anno'];
     $where[] = "Anno = $anno";
@@ -38,6 +45,14 @@ if (!empty($_GET['anno'])) {
 if (!empty($_GET['reparto'])) {
     $reparto = Reparto::getRepartoCode($_GET['reparto']);
     $where[] = "Repart = '$reparto'";
+}
+if (!empty($_GET['gestione'])) {
+    $gestione = Gestione::getGestioneCode($_GET['gestione']);
+    $where[] = "Gestione = '$gestione'";
+}
+if (!empty($_GET['descrizione'])) {
+   $descrizione = $conn->real_escape_string($_GET['descrizione']);;
+    $where[] = "Descrizione LIKE '%$descrizione%'";
 }
 
 if (!empty($_GET['numero'])) {
@@ -101,20 +116,22 @@ $result = $conn->query($sql);
     .col-numero { width: 60px; }
     .col-causa { width: 80px; }
     .col-controparte { width: 150px; }
-        .col-reparto { width: 80px; }
+    .col-proprietario { width: 90px; }
+    .col-reparto { width: 80px; }
+    .col-gestione { width: 80px; }
+    .col-descrizione { width: 280px; }
     .col-stato { width: 100px; }
     .col-dataevento { width: 100px; }
     .col-azioni { width: 120px; }
     .col-LegaleControparte{
         width: 100px;
     }
-    /* Tabelle con table-layout fixed */
+
     table {
         table-layout: fixed;
         width: 100%;
     }
 
-    /* Troncamento testo per tutte le celle */
     td, th {
         overflow: hidden;
         text-overflow: ellipsis;
@@ -124,7 +141,7 @@ $result = $conn->query($sql);
 </head>
 <body>
 
-<div class="container mt-5">
+<div class="mt-5">
     <h2 class="text-center mb-4">📋 Elenco Sinistri</h2>
 
     <div class="card">
@@ -153,6 +170,14 @@ $result = $conn->query($sql);
             <input type="text" name="reparto" value="<?= $_GET['reparto'] ?? '' ?>" 
                    placeholder="Reparto" class="form-control form-control-sm">
         </th>
+        <th class="col-gestione">
+            <input type="text" name="gestione" value="<?= $_GET['gestione'] ?? '' ?>" 
+                   placeholder="Gestione" class="form-control form-control-sm">
+        </th>
+             <th class="col-descrizione">
+            <input type="text" name="descrizione" value="<?= $_GET['descrizione'] ?? '' ?>" 
+                   placeholder="Descrizione" class="form-control form-control-sm">
+        </th>
         <th class="col-causa">
             <input type="text" name="causa" value="<?= $_GET['causa'] ?? '' ?>" 
                    placeholder="Causa" class="form-control form-control-sm">
@@ -161,7 +186,10 @@ $result = $conn->query($sql);
             <input type="text" name="controparte" value="<?= $_GET['controparte'] ?? '' ?>" 
                    placeholder="Controparte" class="form-control form-control-sm">
         </th>
-
+  <th class="col-proprietario">
+            <input type="text" name="proprietario" value="<?= $_GET['proprietario'] ?? '' ?>" 
+                   placeholder="Proprietario" class="form-control form-control-sm">
+        </th>
         <th class="col-stato">
             <input type="text" name="stato" value="<?= $_GET['stato'] ?? '' ?>" 
                    placeholder="Stato" class="form-control form-control-sm">
@@ -181,8 +209,11 @@ $result = $conn->query($sql);
                 <th class="col-anno">Anno</th>
                 <th class="col-numero">Numero</th>
                 <th class="col-reparto">Reparto</th>
+                <th class="col-gestione">Gestione</th>
+                <th class="col-descrizione">Descrizione</th>
                 <th class="col-causa">Causa</th>
                 <th class="col-controparte">Controparte</th>
+                <th class="col-proprietario">Proprietario</th>
                 <th class="col-stato">Stato</th>
                 <th class="col-dataevento">Data Evento</th>
                 <th class="col-azioni">Azioni</th>
@@ -200,9 +231,18 @@ $result = $conn->query($sql);
 
 ?>
 </td>
+<td class="col-gestione">
+    <?php 
+ echo Gestione::getGestioneLabel($row['gestione']);
+
+?>
+ <td class="col-descrizione" title="<?= htmlspecialchars($row['Descrizione']) ?>">
+    <?= htmlspecialchars(mb_strimwidth($row['Descrizione'], 0, 50, '...')) ?>
+</td>
 
                 <td class="col-causa"><?= $row['causa'] ?></td>
                 <td class="col-controparte"><?= $row['controparte'] ?></td>
+                <td class="col-proprietario"><?= $row['Proprietario'] ?></td>
   <td class="col-stato">
     <?= htmlspecialchars($row['stato'])=="A" ? "Aperta" : "Chiusa" ?>
 </td>
@@ -249,7 +289,7 @@ $result = $conn->query($sql);
                                                 <th>Descrizione</th>
                                                 <th>Inizio</th>
                                                 <th>Fine</th>
-                                                <th>Esito</th>
+                                                <th>Prot. Num.</th>
                                                 <th>Valore</th>
                                                 <th>Annotazioni</th>
                                             </tr>
@@ -266,7 +306,7 @@ $result = $conn->query($sql);
                                                 <td>
                                                 <?= (new DateTime($f['DataFine']))->format('d/m/Y'); ?>
                                                 </td>
-                                                <td><?= htmlspecialchars($f['Esito']) ?></td>
+                                                <td><?= htmlspecialchars($f['Prot_num']) ?></td>
                                                 <td><?= $f['Valore'] ?></td>
                                                 <td><?= !empty($f['Annotazioni']) ? $f['Annotazioni'] : "" ?></td>
                                             </tr>
@@ -330,7 +370,7 @@ $result = $conn->query($sql);
 
             <div class="d-flex justify-content-between mt-3">
                 <a href="index.php" class="btn btn-secondary">⬅️ Indietro</a>
-                <a href="ricerca_sinistri.php" class="btn btn-info text-white">🔍 Ricerca</a>
+                <!-- <a href="ricerca_sinistri.php" class="btn btn-info text-white">🔍 Ricerca</a> -->
             </div>
         </div>
     </div>

@@ -13,13 +13,8 @@ $campi = [
     'strada' => 'Strada',
     'NumCiv' => 'Num Civ',
     'Annotazioni' => 'Annotazioni',
-    'Fasi_Cod' => 'Cod. Fase',
-    'DescrizioneFase' => 'Descrizione Fase',
-    'DataInizio' => 'Data Inizio Fase',
-    'DataFine' => 'Data Fine Fase',
     'Esito' => 'Esito',
     'Valore' => 'Valore',
-    'AnnotazioniFase' => 'Annotazioni Fase'
 ];
 ?>
 

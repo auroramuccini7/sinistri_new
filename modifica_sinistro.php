@@ -29,12 +29,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
     // Aggiorno i campi del sinistro
     $stmt = $conn->prepare("UPDATE sinistri_nuovi SET 
-        tipo=?, anno=?, numero=?, repart=?, gestione=?, stato=?, dataEvento=?, tipoDanno=?, causa=?, strada=?, numCiv=?, annotazioni=? 
+        tipo=?, anno=?, numero=?, repart=?, gestione=?, stato=?, dataEvento=?, tipoDanno=?, causa=?, strada=?, numCiv=?, descrizione=? , prot_num =?
         WHERE id=?");
-    $stmt->bind_param("siisssssssssi",
+    $stmt->bind_param("siissssssssssi",
         $_POST['tipo'], $_POST['anno'], $_POST['numero'], Reparto::getRepartoCode($_POST['reparto']), $_POST['gestione'],
         Stato::getStatoCode($_POST['stato']), $_POST['dataEvento'], $_POST['tipo_danno'], $_POST['causa'],
-        $_POST['strada'], $_POST['num_civ'], $_POST['annotazioni'], $id);
+        $_POST['strada'], $_POST['num_civ'], $_POST['descrizione'],$_POST['prot_num'], $id);
     $stmt->execute();
 
     // Inserisco eventuali nuove fasi
@@ -190,6 +190,7 @@ while ($fase = $allFasi->fetch_assoc()) {
             </select>
         </td>
         <td><input type="text" name="des_fase[]" disabled></td>
+        <td><input type="text" name="Prot_num[]"></td>
         <td><input type="date" name="data_inizio[]"></td>
         <td><input type="date" name="data_fine[]"></td>
         <td><input type="text" name="esito[]"></td>
@@ -222,10 +223,10 @@ function rimuoviFase(btn) {
     </div>
 
     <div class="form-group"><label>Anno:</label>
-        <input type="number" name="anno" value="<?php echo $sinistro['anno']; ?>" required>
+        <input type="number" name="anno" value="<?php echo $sinistro['anno']; ?>" readonly required>
     </div>
     <div class="form-group"><label>Numero:</label>
-        <input type="number" name="numero" value="<?php echo $sinistro['numero']; ?>" required>
+        <input type="number" name="numero" value="<?php echo $sinistro['numero']; ?>" readonly required>
     </div>
     <div class="form-group"><label>Reparto:</label>
        <select name="reparto" id="reparto-select">
@@ -263,6 +264,9 @@ function rimuoviFase(btn) {
     <div class="form-group"><label>Causa:</label>
         <input type="text" name="causa" value="<?php echo $sinistro['causa']; ?>">
     </div>
+     <div class="form-group"><label>Prot. Num.:</label>
+        <input type="text" name="prot_num" value="<?php echo $sinistro['Prot_num']; ?>">
+    </div>
     <div class="form-group"><label>Strada:</label>
        <select name="strada" id="strada-select">
     <?php 
@@ -278,21 +282,22 @@ function rimuoviFase(btn) {
     <div class="form-group"><label>Num. civico:</label>
         <input type="text" name="num_civ" value="<?php echo $sinistro['NumCiv']; ?>">
     </div>
-    <div class="form-group"><label>Annotazioni:</label>
-        <textarea name="annotazioni"><?php echo $sinistro['annotazioni']; ?></textarea>
+    <div class="form-group"><label>Descrizione:</label>
+        <textarea name="descrizione"><?php echo $sinistro['Descrizione']; ?></textarea>
     </div>
         <div style="display:flex; justify-content:flex-end;"> <input type="submit" value="💾 Salva Sinistro">   </div>
    
     <h3>Fasi già registrate</h3>
 <table>
     <tr>
-        <th>Cod.</th><th>Descrizione</th><th>Data inizio</th><th>Data fine</th>
+        <th>Cod.</th><th>Descrizione</th><th>Prot. Num.</th><th>Data inizio</th><th>Data fine</th>
         <th>Esito</th><th>Valore</th><th>Annotazioni</th><th>Azioni</th>
     </tr>
 <?php foreach($fasi as $f): ?>
     <tr>
         <td><?= htmlspecialchars($f['Fasi_Cod']) ?></td>
         <td><?= htmlspecialchars($f['DescrizioneFase']) ?></td>
+        <td><?= htmlspecialchars($f['Prot_num']) ?></td>
         <td><?= htmlspecialchars($f['DataInizio']) ?></td>
         <td><?= htmlspecialchars($f['DataFine']) ?></td>
         <td><?= htmlspecialchars($f['Esito']) ?></td>
@@ -301,7 +306,7 @@ function rimuoviFase(btn) {
         <td>
             <form method="post" style="display:inline">
                 <input type="hidden" name="delete_fase_id" value="<?= htmlspecialchars($f['id']) ?>">
-                <button type="submit">❌</button>
+     <button type="submit" name="delete_fase" value="1">❌</button>
             </form>
         </td>
     </tr>
@@ -317,7 +322,7 @@ function rimuoviFase(btn) {
     <h3>Aggiungi nuove fasi</h3>
     <table id="nuove_fasi">
         <tr>
-            <th>Cod. fase</th><th>Descrizione</th><th>Data inizio</th><th>Data fine</th>
+            <th>Cod. fase</th><th>Descrizione</th><th>Prot. Num.</th><th>Data inizio</th><th>Data fine</th>
             <th>Esito</th><th>Valore</th><th>Annotazioni</th>
         </tr>
     </table>
