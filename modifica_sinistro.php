@@ -257,8 +257,8 @@ function rimuoviFase(btn) {
     <div class="form-group"><label>Tipo danno:</label>
        
           <select name="tipo_danno" id="tipo_danno">
-        <option value="comune" <?php if($sinistro['tipo_danno'] == "C") echo "selected"; ?>>Cose</option>
-        <option value="anthea" <?php if($sinistro['tipo_danno'] == "P") echo "selected"; ?>>Persone</option>
+        <option value="C" <?php if($sinistro['TipoDanno'] == "C") echo "selected"; ?>>Cose</option>
+        <option value="P" <?php if($sinistro['TipoDanno'] == "P") echo "selected"; ?>>Persone</option>
     </select>
     </div>
     <div class="form-group"><label>Causa:</label>
