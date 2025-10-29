@@ -29,11 +29,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
     // Aggiorno i campi del sinistro
     $stmt = $conn->prepare("UPDATE sinistri_nuovi SET 
-        tipo=?, anno=?, numero=?, repart=?, gestione=?, stato=?, dataEvento=?, tipoDanno=?, causa=?, strada=?, numCiv=?, descrizione=? , prot_num =?
+        tipo=?, anno=?, numero=?, repart=?, gestione=?, stato=?, dataEvento=?, tipoDanno=?, causa=?, controparte=?, proprietario=?, strada=?, numCiv=?, descrizione=? , prot_num =?
         WHERE id=?");
-    $stmt->bind_param("siissssssssssi",
+    $stmt->bind_param("siissssssssssssi",
         $_POST['tipo'], $_POST['anno'], $_POST['numero'], Reparto::getRepartoCode($_POST['reparto']), $_POST['gestione'],
-        Stato::getStatoCode($_POST['stato']), $_POST['dataEvento'], $_POST['tipo_danno'], $_POST['causa'],
+        Stato::getStatoCode($_POST['stato']), $_POST['dataEvento'], $_POST['tipo_danno'], $_POST['causa'],$_POST['controparte'],$_POST['proprietario'],
         $_POST['strada'], $_POST['num_civ'], $_POST['descrizione'],$_POST['prot_num'], $id);
     $stmt->execute();
 
@@ -157,6 +157,7 @@ function salvaFase(btn) {
         data_inizio: row.querySelector('[name="data_inizio[]"]').value,
         data_fine: row.querySelector('[name="data_fine[]"]').value,
         esito: row.querySelector('[name="esito[]"]').value,
+        prot_num: row.querySelector('[name="prot_num[]"]').value,
         valore: row.querySelector('[name="valore[]"]').value,
         annotazioni: row.querySelector('[name="annotazioni_fase[]"]').value
     };
@@ -190,7 +191,7 @@ while ($fase = $allFasi->fetch_assoc()) {
             </select>
         </td>
         <td><input type="text" name="des_fase[]" disabled></td>
-        <td><input type="text" name="Prot_num[]"></td>
+        <td><input type="text" name="prot_num[]"></td>
         <td><input type="date" name="data_inizio[]"></td>
         <td><input type="date" name="data_fine[]"></td>
         <td><input type="text" name="esito[]"></td>
@@ -243,8 +244,8 @@ function rimuoviFase(btn) {
     </div>
     <div class="form-group"><label>Gestione:</label>
     <select name="gestione" id="gestione">
-        <option value="comune" <?php if($sinistro['gestione'] == "comune") echo "selected"; ?>>Comune</option>
-        <option value="anthea" <?php if($sinistro['gestione'] == "anthea") echo "selected"; ?>>Anthea</option>
+        <option value="C" <?php if($sinistro['gestione'] == "C") echo "selected"; ?>>Comune</option>
+        <option value="A" <?php if($sinistro['gestione'] == "A") echo "selected"; ?>>Anthea</option>
     </select>
 </div>
     <div class="form-group"><label>Stato:</label>
@@ -263,6 +264,12 @@ function rimuoviFase(btn) {
     </div>
     <div class="form-group"><label>Causa:</label>
         <input type="text" name="causa" value="<?php echo $sinistro['causa']; ?>">
+    </div>
+      <div class="form-group"><label>Controparte:</label>
+        <input type="text" name="controparte" value="<?php echo $sinistro['controparte']; ?>">
+    </div>
+       <div class="form-group"><label>Proprietario:</label>
+        <input type="text" name="proprietario" value="<?php echo $sinistro['Proprietario']; ?>">
     </div>
      <div class="form-group"><label>Prot. Num.:</label>
         <input type="text" name="prot_num" value="<?php echo $sinistro['Prot_num']; ?>">

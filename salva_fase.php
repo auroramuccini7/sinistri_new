@@ -33,13 +33,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $data_inizio = $_POST['data_inizio'];
     $data_fine = $_POST['data_fine'];
     $esito = $_POST['esito'];
+    $prot_num = $_POST['prot_num'];
     $valore = floatval($_POST['valore']);
     $annotazioni = $_POST['annotazioni'];
 
+
     // Inserisce la fase
     $stmt = $conn->prepare("INSERT INTO fasi_nuove
-        (sinistri_id, sinistri_tipo, sinistri_anno, sinistri_numero, fasi_cod, dataInizio, dataFine, esito, valore, annotazioni)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        (sinistri_id, sinistri_tipo, sinistri_anno, sinistri_numero, fasi_cod, dataInizio, dataFine, esito,Prot_num, valore, annotazioni)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
     if ($stmt === false) {
         echo json_encode(['success' => false, 'error' => $conn->error]);
@@ -47,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     $stmt->bind_param(
-        "siissssdds",
+        "siisssssdds",
         $id_sinistro,
         $tipo,
         $anno,
@@ -56,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $data_inizio,
         $data_fine,
         $esito,
+        $prot_num,
         $valore,
         $annotazioni
     );
