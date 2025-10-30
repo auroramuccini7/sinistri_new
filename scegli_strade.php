@@ -12,7 +12,15 @@ if ($comune == 'RN') {
     require 'api_strade_bellaria.php';
     $strade = getAllDataBellaria(); // strade Bellaria
 } else {
-    $strade = [];
+    // Tutte le strade: RN + BE
+    require 'api_strade.php';
+    $stradeRN = getAllData();
+
+    require 'api_strade_bellaria.php';
+    $stradeBE = getAllDataBellaria();
+
+    // Unione
+    $strade = array_merge($stradeRN, $stradeBE);
 }
 
 echo json_encode($strade);

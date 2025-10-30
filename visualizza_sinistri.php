@@ -40,7 +40,7 @@ if (!empty($_GET['anno'])) $where[] = "Anno = " . (int)$_GET['anno'];
 if (!empty($_GET['reparto'])) $where[] = "Repart = '" . Reparto::getRepartoCode($_GET['reparto']) . "'";
 if (!empty($_GET['gestione'])) $where[] = "Gestione = '" . Gestione::getGestioneCode($_GET['gestione']) . "'";
 if (!empty($_GET['comune'])) $where[] = "Comune = '" . $conn->real_escape_string($_GET['comune']) . "'";
-if (!empty($_GET['strada'])) $where[] = "strada LIKE '%" . $conn->real_escape_string($_GET['strada']) . "%'";
+if (!empty($_GET['strada'])) $where[] = "strada = '" . $conn->real_escape_string($_GET['strada']) . "'";
 if (!empty($_GET['descrizione'])) $where[] = "Descrizione LIKE '%" . $conn->real_escape_string($_GET['descrizione']) . "%'";
 if (!empty($_GET['numero'])) $where[] = "Numero = " . (int)$_GET['numero'];
 if (!empty($_GET['controparte'])) $where[] = "Controparte LIKE '%" . $conn->real_escape_string($_GET['controparte']) . "%'";
@@ -69,6 +69,9 @@ $result = $conn->query($sql);
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <style>
 body { background: #f7f9fc; }
 .card { border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
@@ -78,7 +81,6 @@ body { background: #f7f9fc; }
 .btn-toggle.collapsed::after { content: " ▼"; }
 .btn-toggle:not(.collapsed)::after { content: " ▲"; }
 .pagination-sm .page-link { padding: 0.25rem 0.6rem; font-size: 0.8rem; }
-
 .col-tipo { width: 70px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .col-anno { width: 60px; }
 .col-numero { width: 60px; }
@@ -128,9 +130,14 @@ td, th { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 <option value="BE" <?= ($_GET['comune']??'')=='BE'?'selected':'' ?>>Bellaria</option>
 </select>
 </th>
+
 <th class="col-strada">
-<select name="strada" id="strada" class="form-select form-select-sm"><option value="">--</option></select>
+    <select name="strada" id="strada" class="form-select form-select-sm" style="width:100%;">
+        <option value="">--</option>
+    </select>
 </th>
+
+
 <th class="col-descrizione"><input type="text" name="descrizione" value="<?= $_GET['descrizione']??'' ?>" placeholder="Descrizione" class="form-control form-control-sm"></th>
 <th class="col-causa"><input type="text" name="causa" value="<?= $_GET['causa']??'' ?>" placeholder="Causa" class="form-control form-control-sm"></th>
 <th class="col-controparte"><input type="text" name="controparte" value="<?= $_GET['controparte']??'' ?>" placeholder="Controparte" class="form-control form-control-sm"></th>
@@ -257,27 +264,27 @@ for ($i=$start;$i<=$end;$i++): ?>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 $(function(){
-const $comune = $('#comune');
-const $strada = $('#strada');
+    const $strada = $('#strada');
+    const stradaSelezionata = <?= json_encode($_GET['strada'] ?? '') ?>;
 
-function caricaStrade(comune, stradaSelezionata='') {
-if (!comune) { $strada.html('<option value="">--</option>'); return; }
-$strada.prop('disabled',true).html('<option>Caricamento...</option>');
-$.getJSON('scegli_strade.php',{comune:comune},function(data){
-$strada.empty();
-$strada.append('<option value="">--</option>');
-$.each(data,function(i,s){
-$strada.append('<option value="'+s.id+'" '+(s.id==stradaSelezionata?'selected':'')+'>'+s.nome+'</option>');
-});
-$strada.prop('disabled',false);
-});
-}
+    $.getJSON('scegli_strade.php', { tutti: 1 }, function(data){
+        $strada.empty();
+        $strada.append('<option value="">--</option>');
+        $.each(data, function(i, s){
+            const selected = s.id == stradaSelezionata ? 'selected' : '';
+            $strada.append('<option value="'+s.id+'" '+selected+'>'+s.nome+'</option>');
+        });
 
-$comune.on('change',function(){caricaStrade($(this).val());});
-const comuneIniziale = $comune.val();
-const stradaSelezionata = <?= json_encode($_GET['strada']??'') ?>;
-if (comuneIniziale) caricaStrade(comuneIniziale,stradaSelezionata);
+        // Inizializza Select2 per ricerca
+        $strada.select2({
+            placeholder: "Seleziona una strada",
+            allowClear: true,
+            width: 'resolve'
+        });
+    });
 });
+
+
 </script>
 
 </body>
