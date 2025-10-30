@@ -31,7 +31,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     $stato = !empty($_POST['stato'])? Stato::getStatoCode($_POST['stato']) : "A" ;
     $reparto = Reparto::getRepartoCode($_POST['reparto']);
-    $comune = Comuni::getComuniCode($_POST['comune']);
+    $comune = $_POST['comune'];
     $tipo = $_POST['tipo'];
     $numero = $_POST['numero']; // Assicurati che esista
     $data_aggiunta = date('Y-m-d');
@@ -133,6 +133,63 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 $(document).ready(function() {
     $('#strada-select, #reparto-select').select2({ placeholder: "Seleziona o cerca", allowClear: true });
+
+ $(document).ready(function () {
+    const $stradaSelect = $('#strada-select');
+    const $comuneSelect = $('#comune');
+
+    // Inizializza Select2
+    $stradaSelect.select2({ placeholder: "Seleziona una strada", allowClear: true });
+
+    // Funzione per caricare le strade in base al comune
+    function caricaStrade(comuneSelezionato) {
+        $stradaSelect.prop('disabled', true)
+                     .empty()
+                     .append('<option value="">Caricamento strade...</option>')
+                     .trigger('change.select2');
+
+        $.ajax({
+            url: 'scegli_strade.php',
+            method: 'GET',
+            dataType: 'json',
+            data: { comune: comuneSelezionato },
+            success: function (data) {
+                $stradaSelect.empty();
+
+                if (!data || data.length === 0) {
+                    $stradaSelect.append('<option value="">Nessuna strada trovata</option>');
+                } else {
+                    $stradaSelect.append('<option value="">Seleziona una strada</option>');
+                    $.each(data, function (i, strada) {
+                        $stradaSelect.append('<option value="' + strada.id + '">' + strada.nome + '</option>');
+                    });
+                }
+
+                $stradaSelect.prop('disabled', false);
+                setTimeout(() => $stradaSelect.trigger('change.select2'), 100);
+            },
+            error: function () {
+                $stradaSelect.empty()
+                             .append('<option value="">Errore nel caricamento</option>')
+                             .prop('disabled', false)
+                             .trigger('change.select2');
+            }
+        });
+    }
+
+    // 🔹 Carica di default le strade di Rimini (RN)
+    caricaStrade('RN');
+    $comuneSelect.val('RN').trigger('change.select2');
+
+    // 🔹 Ricarica le strade quando si cambia comune
+    $comuneSelect.on('change', function () {
+        const comune = $(this).val();
+        if (comune) caricaStrade(comune);
+    });
+});
+
+
+
 
     $('#form-sinistro').submit(function(e){
         e.preventDefault();
@@ -278,24 +335,22 @@ let data = {
     <div class="form-group"><label>Causa:</label><input type="text" name="causa"></div>
         <div class="form-group"><label>Controparte:</label><input type="text" name="controparte"></div>
         <div class="form-group"><label>Legale controparte:</label><input type="text" name="legaleControparte"></div>
+          <div class="form-group"><label>Comune:</label><select name="comune" id="comune">
+              <option value="RN">Rimini</option>
+            <option value="BE">Bellaria</option>
+        </select></div>
 <div class="form-group">
     <label>Strada:</label>
-    <select name="strada" id="strada-select">
-        <option></option> 
-        <?php 
-        $strade = getAllData(); 
-        foreach($strade as $strada){ 
-              echo '<option value="' . $strada['id'] . '">' . $strada['nome'] . '</option>';
+   <select name="strada" id="strada-select">
+    <option value="">Seleziona prima il comune</option>
+</select>
 
-        }
-        ?>
-    </select>
 </div>
 
 
 
     <div class="form-group"><label>Num. civico:</label><input type="number" name="num_civ"></div>
-    <div class="form-group"><label>Comune:</label><input type="text" name="comune"></div>
+  
      <div class="form-group"><label>Tipo gestione:</label><input type="text" name="tipoGestione"></div>
     <div class="form-group"><label>Annotazioni:</label><textarea name="annotazioni"></textarea></div>
     <div style="display:flex; justify-content:flex-end;"> <input type="submit" value="💾 Salva Sinistro">   </div>

@@ -29,12 +29,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
     // Aggiorno i campi del sinistro
     $stmt = $conn->prepare("UPDATE sinistri_nuovi SET 
-        tipo=?, anno=?, numero=?, repart=?, gestione=?, stato=?, dataEvento=?, tipoDanno=?, causa=?, controparte=?, proprietario=?, strada=?, numCiv=?, descrizione=? , prot_num =?
+        tipo=?, anno=?, numero=?, repart=?, gestione=?, stato=?, dataEvento=?, tipoDanno=?, causa=?, controparte=?, proprietario=?, strada=?, numCiv=?, descrizione=? , prot_num =?, comune = ?, annotazioni=?
         WHERE id=?");
-    $stmt->bind_param("siissssssssssssi",
+    $stmt->bind_param("siissssssssssssssi",
         $_POST['tipo'], $_POST['anno'], $_POST['numero'], Reparto::getRepartoCode($_POST['reparto']), $_POST['gestione'],
         Stato::getStatoCode($_POST['stato']), $_POST['dataEvento'], $_POST['tipo_danno'], $_POST['causa'],$_POST['controparte'],$_POST['proprietario'],
-        $_POST['strada'], $_POST['num_civ'], $_POST['descrizione'],$_POST['prot_num'], $id);
+        $_POST['strada'], $_POST['num_civ'], $_POST['descrizione'],$_POST['prot_num'], $_POST['comune'],$_POST['annotazioni'],$id);
     $stmt->execute();
 
     // Inserisco eventuali nuove fasi
@@ -274,23 +274,25 @@ function rimuoviFase(btn) {
      <div class="form-group"><label>Prot. Num.:</label>
         <input type="text" name="prot_num" value="<?php echo $sinistro['Prot_num']; ?>">
     </div>
-    <div class="form-group"><label>Strada:</label>
-       <select name="strada" id="strada-select">
-    <?php 
-    $strade = getAllData(); 
-    $stradaSelezionata = $sinistro['strada']; // ID della strada selezionata
-    foreach($strade as $strada){ 
-        $selected = ($strada['id'] == $stradaSelezionata) ? 'selected' : '';
-        echo '<option value="' . $strada['id'] . '" ' . $selected . '>' . $strada['nome'] . '</option>';
-    } 
-    ?>
-</select>
-    </div>
+          <div class="form-group"><label>Comune:</label><select name="comune" id="comune">
+              <option value="RN" <?php if($sinistro['Comune'] == "RN") echo "selected"; ?>>Rimini</option>
+            <option value="BE" <?php if($sinistro['Comune'] == "BE") echo "selected"; ?>>Bellaria</option>
+        </select></div>
+    <div class="form-group">
+  <label>Strada:</label>
+  <select name="strada" id="strada-select">
+      <option value="">Caricamento strade...</option>
+  </select>
+</div>
+
     <div class="form-group"><label>Num. civico:</label>
         <input type="text" name="num_civ" value="<?php echo $sinistro['NumCiv']; ?>">
     </div>
     <div class="form-group"><label>Descrizione:</label>
         <textarea name="descrizione"><?php echo $sinistro['Descrizione']; ?></textarea>
+    </div>
+     <div class="form-group"><label>Annotazioni:</label>
+        <textarea name="annotazioni"><?php echo $sinistro['annotazioni']; ?></textarea>
     </div>
         <div style="display:flex; justify-content:flex-end;"> <input type="submit" value="💾 Salva Sinistro">   </div>
    
@@ -339,6 +341,42 @@ function rimuoviFase(btn) {
         <button type="button" onclick="window.location.href='visualizza_sinistri.php'">⬅️ Indietro</button>
     </div>
 </form>
+<script>
+$(document).ready(function () {
+    const $stradaSelect = $('#strada-select');
+    const $comuneSelect = $('#comune');
+
+    function caricaStrade(comune, stradaSelezionata = null) {
+        $stradaSelect.prop('disabled', true)
+            .empty()
+            .append('<option value="">Caricamento strade...</option>');
+
+        $.getJSON('scegli_strade.php', { comune: comune }, function (data) {
+            $stradaSelect.empty();
+            if (!data || data.length === 0) {
+                $stradaSelect.append('<option value="">Nessuna strada trovata</option>');
+            } else {
+                $stradaSelect.append('<option value="">Seleziona una strada</option>');
+                $.each(data, function (i, strada) {
+                    const selected = stradaSelezionata && strada.id == stradaSelezionata ? 'selected' : '';
+                    $stradaSelect.append('<option value="' + strada.id + '" ' + selected + '>' + strada.nome + '</option>');
+                });
+            }
+            $stradaSelect.prop('disabled', false);
+        });
+    }
+
+    // 🔹 Al caricamento pagina → mostra strade in base al comune attuale del sinistro
+    const comuneIniziale = $('#comune').val();
+    const stradaSelezionata = <?= json_encode($sinistro['strada']) ?>;
+    caricaStrade(comuneIniziale, stradaSelezionata);
+
+    // 🔹 Se cambia comune → aggiorna le strade dinamicamente
+    $comuneSelect.on('change', function () {
+        caricaStrade($(this).val());
+    });
+});
+</script>
 
 </body>
 </html>
