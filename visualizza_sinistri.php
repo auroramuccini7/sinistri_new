@@ -162,6 +162,7 @@ td, th { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 <th class="col-proprietario">Proprietario</th>
 <th class="col-stato">Stato</th>
 <th class="col-dataevento">Data Evento</th>
+<th class="col-esito">Esito</th>
 <th class="col-azioni">Azioni</th>
 </tr>
 </thead>
