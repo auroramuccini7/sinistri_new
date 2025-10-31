@@ -202,7 +202,7 @@ echo htmlspecialchars($nomeStrada);
 </tr>
 
 <tr class="collapse collapse-row" id="fasi<?= $row['tipo'].$row['anno'].$row['numero'] ?>">
-<td colspan="9">
+<td colspan="13">
 <?php
 $fasi = Fasi::getFasi($conn, $row['id'], $row['anno']);
 if (!empty($fasi)): ?>

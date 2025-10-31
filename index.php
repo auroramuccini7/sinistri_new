@@ -69,6 +69,10 @@
         <div class="emoji">📥</div>
         Esporta Excel
     </a>
+      <a href="visualizza_fasi.php" class="btn">
+        <div class="emoji">📊</div>
+       Tutte le fasi
+    </a>
   
 </div>
 
